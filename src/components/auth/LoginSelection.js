@@ -75,7 +75,7 @@ export default function LoginSelection({ onLogin }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="input-field text-gray-900 bg-white" 
-            placeholder="jane@example.com"
+            placeholder="  xyz@example.com"
           />
         </div>
         <div>
@@ -86,7 +86,7 @@ export default function LoginSelection({ onLogin }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="input-field text-gray-900 bg-white" 
-            placeholder="••••••••"
+            placeholder="   ••••••••"
           />
         </div>
 

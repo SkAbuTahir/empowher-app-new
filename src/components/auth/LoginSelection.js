@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { UserCircle, Building, UserCog, ArrowLeft } from 'lucide-react';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -14,22 +14,34 @@ const AUTH_ERRORS = {
 
 export default function LoginSelection({ onLogin }) {
   const [view, setView] = useState('selection');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [adminCode, setAdminCode] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [authMode, setAuthMode] = useState('login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
 
-  const switchView = (newView) => {
+  const handleEmailChange = useCallback((e) => {
+    setEmail(e.target.value);
+  }, []);
+
+  const handlePasswordChange = useCallback((e) => {
+    setPassword(e.target.value);
+  }, []);
+
+  const handleAdminCodeChange = useCallback((e) => {
+    setAdminCode(e.target.value);
+  }, []);
+
+  const switchView = useCallback((newView) => {
     setView(newView);
     setError('');
     setEmail('');
     setPassword('');
     setAuthMode('login');
-  };
+  }, []);
 
-  const handleAuth = async (e, userType) => {
+  const handleAuth = useCallback(async (e, userType) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
@@ -45,9 +57,9 @@ export default function LoginSelection({ onLogin }) {
       setError(AUTH_ERRORS[err.code] || err.message);
     }
     setIsLoading(false);
-  };
+  }, [authMode, email, password, onLogin]);
 
-  const handleAdminLogin = async (e) => {
+  const handleAdminLogin = useCallback(async (e) => {
     e.preventDefault();
     if (adminCode === 'admin123') {
       setIsLoading(true);
@@ -56,60 +68,12 @@ export default function LoginSelection({ onLogin }) {
     } else {
       setError('Invalid Access Code');
     }
-  };
+  }, [adminCode, onLogin]);
 
-  const AuthForm = ({ userType, title, subtitle, buttonColor }) => (
-    <div className="animate-fadeIn w-full">
-      <button onClick={() => switchView('selection')} className="text-sm text-gray-500 mb-4 hover:underline flex items-center gap-1">
-        <ArrowLeft size={14} /> Back to Roles
-      </button>
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">{title}</h2>
-      <p className="text-sm text-gray-500 mb-6">{subtitle}</p>
-      
-      <form onSubmit={(e) => handleAuth(e, userType)} className="space-y-4">
-        <div>
-          <label className="label text-gray-700">Email Address</label>
-          <input 
-            type="email" 
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="input-field text-gray-900 bg-white" 
-            placeholder="  xyz@example.com"
-          />
-        </div>
-        <div>
-          <label className="label text-gray-700">Password</label>
-          <input 
-            type="password" 
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="input-field text-gray-900 bg-white" 
-            placeholder="   ••••••••"
-          />
-        </div>
-
-        {error && <p className="text-red-500 text-sm font-medium bg-red-50 p-2 rounded">{error}</p>}
-        
-        <button type="submit" disabled={isLoading} className={`w-full ${buttonColor} text-white py-3 rounded-xl font-bold hover:opacity-90 transition shadow-lg disabled:opacity-50`}>
-          {isLoading ? 'Processing...' : (authMode === 'login' ? 'Login' : 'Create Account')}
-        </button>
-      </form>
-
-      <div className="mt-6 text-center text-sm">
-        {authMode === 'login' ? (
-          <p className="text-gray-600">
-            New here? <button onClick={() => { setAuthMode('register'); setError(''); }} className={`${userType === 'woman' ? 'text-purple-600' : 'text-teal-600'} font-bold hover:underline`}>Create an account</button>
-          </p>
-        ) : (
-          <p className="text-gray-600">
-            Already have an account? <button onClick={() => { setAuthMode('login'); setError(''); }} className={`${userType === 'woman' ? 'text-purple-600' : 'text-teal-600'} font-bold hover:underline`}>Log in</button>
-          </p>
-        )}
-      </div>
-    </div>
-  );
+  const toggleAuthMode = useCallback(() => {
+    setAuthMode(prev => prev === 'login' ? 'register' : 'login');
+    setError('');
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-teal-50 flex items-center justify-center p-4">
@@ -168,21 +132,113 @@ export default function LoginSelection({ onLogin }) {
           )}
 
           {view === 'woman-auth' && (
-            <AuthForm 
-              userType="woman" 
-              title="Job Seeker Portal" 
-              subtitle={authMode === 'login' ? 'Welcome back! Log in to apply.' : 'Create a profile to find jobs.'}
-              buttonColor="bg-purple-600"
-            />
+            <div className="animate-fadeIn w-full">
+              <button onClick={() => switchView('selection')} className="text-sm text-gray-500 mb-4 hover:underline flex items-center gap-1">
+                <ArrowLeft size={14} /> Back to Roles
+              </button>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Job Seeker Portal</h2>
+              <p className="text-sm text-gray-500 mb-6">
+                {authMode === 'login' ? 'Welcome back! Log in to apply.' : 'Create a profile to find jobs.'}
+              </p>
+              
+              <form onSubmit={(e) => handleAuth(e, 'woman')} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                  <input 
+                    type="email" 
+                    required
+                    value={email}
+                    onChange={handleEmailChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 bg-white" 
+                    placeholder="xyz@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                  <input 
+                    type="password" 
+                    required
+                    value={password}
+                    onChange={handlePasswordChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 bg-white" 
+                    placeholder="••••••••"
+                  />
+                </div>
+
+                {error && <p className="text-red-500 text-sm font-medium bg-red-50 p-2 rounded">{error}</p>}
+                
+                <button type="submit" disabled={isLoading} className="w-full bg-purple-600 text-white py-3 rounded-xl font-bold hover:opacity-90 transition shadow-lg disabled:opacity-50">
+                  {isLoading ? 'Processing...' : (authMode === 'login' ? 'Login' : 'Create Account')}
+                </button>
+              </form>
+
+              <div className="mt-6 text-center text-sm">
+                {authMode === 'login' ? (
+                  <p className="text-gray-600">
+                    New here? <button onClick={toggleAuthMode} className="text-purple-600 font-bold hover:underline">Create an account</button>
+                  </p>
+                ) : (
+                  <p className="text-gray-600">
+                    Already have an account? <button onClick={toggleAuthMode} className="text-purple-600 font-bold hover:underline">Log in</button>
+                  </p>
+                )}
+              </div>
+            </div>
           )}
 
           {view === 'company-auth' && (
-            <AuthForm 
-              userType="company" 
-              title="Company Portal" 
-              subtitle={authMode === 'login' ? 'Log in to manage your jobs.' : 'Register to verify your company.'}
-              buttonColor="bg-teal-600"
-            />
+            <div className="animate-fadeIn w-full">
+              <button onClick={() => switchView('selection')} className="text-sm text-gray-500 mb-4 hover:underline flex items-center gap-1">
+                <ArrowLeft size={14} /> Back to Roles
+              </button>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Company Portal</h2>
+              <p className="text-sm text-gray-500 mb-6">
+                {authMode === 'login' ? 'Log in to manage your jobs.' : 'Register to verify your company.'}
+              </p>
+              
+              <form onSubmit={(e) => handleAuth(e, 'company')} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                  <input 
+                    type="email" 
+                    required
+                    value={email}
+                    onChange={handleEmailChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 bg-white" 
+                    placeholder="xyz@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                  <input 
+                    type="password" 
+                    required
+                    value={password}
+                    onChange={handlePasswordChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 bg-white" 
+                    placeholder="••••••••"
+                  />
+                </div>
+
+                {error && <p className="text-red-500 text-sm font-medium bg-red-50 p-2 rounded">{error}</p>}
+                
+                <button type="submit" disabled={isLoading} className="w-full bg-teal-600 text-white py-3 rounded-xl font-bold hover:opacity-90 transition shadow-lg disabled:opacity-50">
+                  {isLoading ? 'Processing...' : (authMode === 'login' ? 'Login' : 'Create Account')}
+                </button>
+              </form>
+
+              <div className="mt-6 text-center text-sm">
+                {authMode === 'login' ? (
+                  <p className="text-gray-600">
+                    New here? <button onClick={toggleAuthMode} className="text-teal-600 font-bold hover:underline">Create an account</button>
+                  </p>
+                ) : (
+                  <p className="text-gray-600">
+                    Already have an account? <button onClick={toggleAuthMode} className="text-teal-600 font-bold hover:underline">Log in</button>
+                  </p>
+                )}
+              </div>
+            </div>
           )}
 
           {view === 'admin' && (
@@ -195,20 +251,21 @@ export default function LoginSelection({ onLogin }) {
               
               <form onSubmit={handleAdminLogin} className="space-y-4">
                 <div>
-                  <label className="label text-gray-700">Access Code</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Access Code</label>
                   <input 
                     type="password" 
                     value={adminCode}
-                    onChange={(e) => setAdminCode(e.target.value)}
-                    className="input-field text-gray-900 bg-white" 
+                    onChange={handleAdminCodeChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-gray-500 focus:border-transparent text-gray-900 bg-white" 
                     placeholder="Enter code"
                     autoFocus
                     autoComplete="off"
                   />
                 </div>
                 {error && <p className="text-red-500 text-sm font-medium bg-red-50 p-2 rounded">{error}</p>}
-                <button type="submit" disabled={isLoading} className="w-full bg-gray-900 text-white py-3 rounded-xl font-bold hover:bg-black transition shadow-lg disabled:opacity-50">
-                  {isLoading ? 'Verifying...' : 'Enter Dashboard'}
+                
+                <button type="submit" disabled={isLoading} className="w-full bg-gray-600 text-white py-3 rounded-xl font-bold hover:opacity-90 transition shadow-lg disabled:opacity-50">
+                  {isLoading ? 'Processing...' : 'Access Admin Panel'}
                 </button>
               </form>
             </div>
